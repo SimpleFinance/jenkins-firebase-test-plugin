@@ -6,14 +6,14 @@ import org.junit.Test
 class TestArgumentsTest {
 
     @Test fun writesRobo() {
-        val args: TestArguments = RoboTestArguments(app = "app.apk").apply {
+        val cmd: AdHocCommand = RoboCommand(app = "app.apk").apply {
             appInitialActivity = "com.foo.bar/BazActivity"
             maxDepth = 5
-            roboDirectives = linkedMapOf(
-                "username_resource" to "username",
-                "password_resource" to "password")
+            roboDirectives = listOf(
+                "username_resource=username",
+                "password_resource=password")
         }
-        val result = FirebaseTestStep.mapper.writeValueAsString(args)
+        val result = FirebaseTestStep.mapper.writeValueAsString(cmd)
         assertEquals("""
 app: "app.apk"
 app-initial-activity: "com.foo.bar/BazActivity"
@@ -26,7 +26,7 @@ type: "robo"
     }
 
     @Test fun writesBasicInstrumentation() {
-        val args: TestArguments = InstrumentationTestArguments(app = "app.apk", test = "test.apk").apply {
+        val args: AdHocCommand = InstrumentationCommand(app = "app.apk", test = "test.apk").apply {
             testPackage = "com.foo.app"
             testTargets = listOf("foo", "bar", "baz")
         }
@@ -44,7 +44,7 @@ type: "instrumentation"
     }
 
     @Test fun writesDeviceList() {
-        val args: TestArguments = InstrumentationTestArguments(app = "app.apk", test = "test.apk").apply {
+        val args: AdHocCommand = InstrumentationCommand(app = "app.apk", test = "test.apk").apply {
             device = listOf(
                     AndroidDevice(model = "flo"),
                     AndroidDevice(model = "g3", version = "19", locale = "zh"),
@@ -62,6 +62,20 @@ device:
 - model: "mako"
   version: "21"
 type: "instrumentation"
+        """.trim(), result.trim())
+    }
+
+    @Test fun writesEnvVars() {
+        val args: AdHocCommand = RoboCommand(app = "app.apk").apply {
+            environmentVariables = listOf("FOO=foo", "BAR=bar")
+        }
+        val result = FirebaseTestStep.mapper.writeValueAsString(args)
+        assertEquals("""
+app: "app.apk"
+environment-variables:
+  FOO: "foo"
+  BAR: "bar"
+type: "robo"
         """.trim(), result.trim())
     }
 }

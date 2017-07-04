@@ -4,16 +4,15 @@ import hudson.Extension
 import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
 
-class InstrumentationTestArguments
-@DataBoundConstructor constructor(app: String, val test: String) : TestArguments(app) {
+class InstrumentationCommand @DataBoundConstructor constructor(app: String, val test: String) : AdHocCommand(app) {
+
+    val type = "instrumentation"
 
     @set:DataBoundSetter var testPackage: String? = null
     @set:DataBoundSetter var testRunnerClass: String? = null
     @set:DataBoundSetter var testTargets: List<String>? = null
 
-    val type = "instrumentation"
-
-    @Extension class Descriptor : TestArgumentsDescriptor() {
+    @Extension class DescriptorImpl : AdHocCommandDescriptor() {
         override fun getDisplayName(): String = "Instrumentation test"
     }
 }

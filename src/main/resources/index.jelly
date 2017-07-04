@@ -1,7 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <?jelly escape-by-default='true'?>
-<!--
-  This view is used to render the installed plugins page.
--->
 <div>
-  This plugin is a sample to explain how to write a Jenkins plugin.
+    Run tests on Firebase Test Lab as a pipeline step.
 </div>

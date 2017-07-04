@@ -1,15 +1,12 @@
 package com.simple.jenkins.firebase
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonUnwrapped
-import hudson.model.AbstractDescribableImpl
-import hudson.model.Describable
-import hudson.model.Descriptor
+import hudson.FilePath
+import org.jenkinsci.plugins.workflow.steps.StepContext
 import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
 
-abstract class TestArguments @DataBoundConstructor constructor(val app: String)
-    : AbstractDescribableImpl<TestArguments>() {
+abstract class AdHocCommand(val app: String) : Command() {
 
     @set:DataBoundSetter var device: List<AndroidDevice>? = null
     @set:DataBoundSetter var timeout: String? = null
@@ -17,13 +14,18 @@ abstract class TestArguments @DataBoundConstructor constructor(val app: String)
     @set:DataBoundSetter var async: Boolean? = null
     @set:DataBoundSetter var autoGoogleLogin: Boolean? = null
     @set:DataBoundSetter var directoriesToPull: List<String>? = null
-    @set:DataBoundSetter var environmentVariables: Map<String, String>? = null
+    @set:DataBoundSetter var environmentVariables: List<String>? = null
     @set:DataBoundSetter var obbFiles: List<String>? = null
     @set:DataBoundSetter var resultsBucket: String? = null
     @set:DataBoundSetter var resultsDir: String? = null
     @set:DataBoundSetter var resultsHistoryName: String? = null
 
-    @JsonIgnore override fun getDescriptor(): Descriptor<TestArguments> = super.getDescriptor()
+    @JsonIgnore lateinit var argfilePath: String
 
-    abstract class TestArgumentsDescriptor : Descriptor<TestArguments>()
+    abstract class AdHocCommandDescriptor : CommandDescriptor()
+
+    override fun args(): String {
+        val argspec = FirebaseTestStep.mapper.writeValueAsString(mapOf("adhoc-test" to this))
+        return "<(echo '$argspec'):adhoc-test"
+    }
 }

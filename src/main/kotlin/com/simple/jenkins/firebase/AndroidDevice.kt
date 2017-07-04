@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import hudson.Extension
 import hudson.model.AbstractDescribableImpl
 import hudson.model.Descriptor
+import hudson.util.ListBoxModel
 import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
 import java.awt.ComponentOrientation
@@ -21,5 +22,10 @@ class AndroidDevice(
 
     @Extension class Descriptor : hudson.model.Descriptor<AndroidDevice>() {
         override fun getDisplayName(): String = "Target device"
+
+        fun doFillOrientationItems(): ListBoxModel = ListBoxModel().apply {
+            add("Portrait", "portrait")
+            add("Landscape", "landscape")
+        }
     }
 }
