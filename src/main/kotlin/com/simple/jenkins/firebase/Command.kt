@@ -7,10 +7,6 @@ import hudson.model.Descriptor
 
 abstract class Command : AbstractDescribableImpl<Command>() {
 
-    open fun setup(path: FilePath) {
-        // Pass
-    }
-
     abstract fun args(): String
 
     @JsonIgnore override fun getDescriptor(): Descriptor<Command> = super.getDescriptor()

@@ -19,7 +19,7 @@ import org.jenkinsci.plugins.durabletask.DurableTask
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep
 import org.kohsuke.stapler.DataBoundConstructor
 
-class FirebaseTestStep @DataBoundConstructor constructor(val command: String) : DurableTaskStep() {
+class FirebaseTestStep @DataBoundConstructor constructor(val command: Command) : DurableTaskStep() {
 
     companion object {
         private val factory = YAMLFactory().apply {
@@ -32,7 +32,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: String) : 
         }
     }
 
-    override fun task(): DurableTask = FirebaseTestTask("gcloud firebase test android run $command")
+    override fun task(): DurableTask = FirebaseTestTask("gcloud firebase test android run ${command.args()}")
 
     @Extension class FirebaseTestStepDescriptor : DurableTaskStepDescriptor() {
 

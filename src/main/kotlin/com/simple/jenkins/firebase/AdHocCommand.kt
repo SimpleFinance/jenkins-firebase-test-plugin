@@ -20,8 +20,6 @@ abstract class AdHocCommand(val app: String) : Command() {
     @set:DataBoundSetter var resultsDir: String? = null
     @set:DataBoundSetter var resultsHistoryName: String? = null
 
-    @JsonIgnore lateinit var argfilePath: String
-
     abstract class AdHocCommandDescriptor : CommandDescriptor()
 
     override fun args(): String {
