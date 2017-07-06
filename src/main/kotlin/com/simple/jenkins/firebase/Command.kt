@@ -1,7 +1,6 @@
 package com.simple.jenkins.firebase
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import hudson.FilePath
 import hudson.model.AbstractDescribableImpl
 import hudson.model.Descriptor
 

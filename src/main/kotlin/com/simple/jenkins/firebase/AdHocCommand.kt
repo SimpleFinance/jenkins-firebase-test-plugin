@@ -1,9 +1,5 @@
 package com.simple.jenkins.firebase
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import hudson.FilePath
-import org.jenkinsci.plugins.workflow.steps.StepContext
-import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
 
 abstract class AdHocCommand(val app: String) : Command() {

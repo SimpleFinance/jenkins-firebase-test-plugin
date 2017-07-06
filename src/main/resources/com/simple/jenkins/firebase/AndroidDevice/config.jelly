@@ -2,19 +2,19 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
 
     <f:entry title="Device model" field="model">
-        <f:textbox />
+        <f:select />
     </f:entry>
 
     <f:entry title="Android SDK version" field="version">
-        <f:textbox />
+        <f:select />
+    </f:entry>
+
+    <f:entry title="Locale" field="locale">
+        <f:select />
     </f:entry>
 
     <f:entry title="Initial orientation" field="orientation">
         <f:select default="portrait" />
-    </f:entry>
-
-    <f:entry title="Locale" field="locale">
-        <f:textbox />
     </f:entry>
 
 </j:jelly>
