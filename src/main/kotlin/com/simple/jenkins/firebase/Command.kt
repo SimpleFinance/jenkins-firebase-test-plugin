@@ -8,6 +8,8 @@ import hudson.model.Descriptor
 @JsonPropertyOrder(alphabetic = true)
 abstract class Command : AbstractDescribableImpl<Command>() {
 
+    open fun setup(controller: FirebaseTestStep.FirebaseTestController) {}
+
     abstract fun args(): String
 
     @JsonIgnore override fun getDescriptor(): Descriptor<Command> = super.getDescriptor()

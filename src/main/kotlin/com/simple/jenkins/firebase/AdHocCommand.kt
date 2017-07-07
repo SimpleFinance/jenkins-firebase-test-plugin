@@ -1,7 +1,11 @@
 package com.simple.jenkins.firebase
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import hudson.FilePath
+import hudson.Util
 import org.kohsuke.stapler.DataBoundSetter
+import java.util.*
 
 abstract class AdHocCommand(val app: String) : Command() {
 
@@ -17,10 +21,14 @@ abstract class AdHocCommand(val app: String) : Command() {
     @set:DataBoundSetter var resultsDir: String? = null
     @set:DataBoundSetter var resultsHistoryName: String? = null
 
-    abstract class AdHocCommandDescriptor : CommandDescriptor()
+    @JsonIgnore lateinit var argfile: FilePath
 
-    override fun args(): String {
-        val argspec = FirebaseTestStep.mapper.writeValueAsString(mapOf("adhoc-test" to this))
-        return "<(echo '$argspec'):adhoc-test"
+    override fun setup(controller: FirebaseTestStep.FirebaseTestController) {
+        argfile = controller.argfile
+        FirebaseTestStep.mapper.writeValue(argfile.write(), mapOf("adhoc-test" to this))
     }
+
+    override fun args(): String = "${argfile.remote}:adhoc-test"
+
+    abstract class AdHocCommandDescriptor : CommandDescriptor()
 }
