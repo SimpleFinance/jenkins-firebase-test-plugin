@@ -18,14 +18,17 @@
             <f:checkbox default="true" />
         </f:entry>
 
-        <!--<f:entry title="Directories to pull" field="directoriesToPull">-->
-        <!--</f:entry>-->
+        <f:entry title="Directories to pull" field="directoriesToPull">
+            <f:textbox />
+        </f:entry>
 
-        <!--<f:entry title="Environment variables" field="environmentVariables">-->
-        <!--</f:entry>-->
+        <f:entry title="Environment variables" field="environmentVariables">
+            <f:textbox />
+        </f:entry>
 
-        <!--<f:entry title="Deobfuscation files" field="obbFiles">-->
-        <!--</f:entry>-->
+        <f:entry title="Deobfuscation files" field="obbFiles">
+            <f:textbox />
+        </f:entry>
 
         <f:entry title="Results bucket" field="resultsBucket">
             <f:textbox />

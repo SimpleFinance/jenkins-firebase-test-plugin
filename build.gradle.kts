@@ -69,19 +69,16 @@ dependencies {
     compileOnly("org.jenkins-ci:symbol-annotation:1.3")
 
     "jenkinsPlugins"("org.jenkins-ci.plugins:structs:1.9")
-    "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-durable-task-step:2.12")
+    "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-durable-task-step:2.12") { isTransitive = true }
 
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-api:2.18")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-step-api:2.12")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-support:2.14")
-    "jenkinsPlugins"("org.jenkins-ci.plugins:scm-api:2.0.7")
-    "jenkinsPlugins"("org.jenkins-ci.plugins:script-security:1.26")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-cps:2.36")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-job:2.13")
 
-    "jenkinsTest"("org.jenkins-ci.main:jenkins-test-harness:2.23")
+    "jenkinsTest"("org.jenkins-ci.main:jenkins-test-harness:2.23") { isTransitive = true }
     "jenkinsTest"("org.jenkins-ci.plugins.workflow:workflow-step-api:2.12:tests")
-    "jenkinsTest"("org.jenkins-ci.plugins.workflow:workflow-scm-step:2.4")
 }
 
 kapt {
