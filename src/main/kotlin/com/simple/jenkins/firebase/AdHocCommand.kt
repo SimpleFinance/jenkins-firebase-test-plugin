@@ -3,9 +3,7 @@ package com.simple.jenkins.firebase
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import hudson.FilePath
-import hudson.Util
 import org.kohsuke.stapler.DataBoundSetter
-import java.util.*
 
 abstract class AdHocCommand(val app: String) : Command() {
 

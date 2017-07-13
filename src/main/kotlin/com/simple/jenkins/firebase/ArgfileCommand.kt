@@ -1,7 +1,6 @@
 package com.simple.jenkins.firebase
 
 import hudson.Extension
-import hudson.util.FormValidation
 import org.jenkinsci.Symbol
 import org.kohsuke.stapler.DataBoundConstructor
 

@@ -61,21 +61,27 @@ dependencies {
     compile(kotlin("stdlib-jre8"))
     compile(kotlin("reflect"))
 
+    compile("com.fasterxml.jackson.core:jackson-core:$jacksonVersion")
     compile("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     compile("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
 
     compile("org.jenkins-ci.lib:dry-run-lib:0.1")
     compileOnly("org.jenkins-ci:symbol-annotation:1.3")
 
+    compile("com.google.cloud:google-cloud:0.20.1-alpha")
+
     "jenkinsPlugins"("org.jenkins-ci.plugins:structs:1.9")
-    "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-durable-task-step:2.12") { isTransitive = true }
+    "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-durable-task-step:2.12")
+    "jenkinsPlugins"("org.jenkins-ci.plugins:credentials:2.1.14")
 
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-api:2.18")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-step-api:2.12")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-support:2.14")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-cps:2.36")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-job:2.13")
+    "jenkinsPlugins"("org.jenkins-ci.plugins:google-oauth-plugin:0.5")
 
     "jenkinsTest"("org.jenkins-ci.main:jenkins-test-harness:2.23") { isTransitive = true }
     "jenkinsTest"("org.jenkins-ci.plugins.workflow:workflow-step-api:2.12:tests")

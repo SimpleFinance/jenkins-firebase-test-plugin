@@ -31,9 +31,9 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
     @Extension @Symbol("device") class DescriptorImpl : Descriptor<AndroidDevice>() {
 
         companion object {
-            val MAPPER = ObjectMapper(YAMLFactory()).apply { registerKotlinModule() }
-            val DEVICE_READER: ObjectReader = MAPPER.readerFor(Device::class.java)
-            val LOCALE_READER: ObjectReader = MAPPER.readerFor(Locale::class.java)
+            val mapper = ObjectMapper(YAMLFactory()).apply { registerKotlinModule() }
+            val deviceReader: ObjectReader = mapper.readerFor(Device::class.java)
+            val localeReader: ObjectReader = mapper.readerFor(Locale::class.java)
         }
 
         val devices: List<Device> by lazy { updateDeviceInfo() }
@@ -77,7 +77,7 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
             val output = reader.lineSequence()
                     .dropWhile { it.trim() != "---" }
                     .joinToString("\n")
-            val iterator: MappingIterator<Device> = DEVICE_READER.readValues(output)
+            val iterator: MappingIterator<Device> = deviceReader.readValues(output)
             return iterator.readAll()
         }
 
@@ -87,7 +87,7 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
             val output = reader.lineSequence()
                     .dropWhile { it.trim() != "---" }
                     .joinToString("\n")
-            val iterator: MappingIterator<Locale> = LOCALE_READER.readValues(output)
+            val iterator: MappingIterator<Locale> = localeReader.readValues(output)
             return iterator.readAll()
         }
 
