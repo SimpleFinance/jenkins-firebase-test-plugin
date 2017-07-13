@@ -4,10 +4,12 @@ import com.cloudbees.plugins.credentials.CredentialsProvider
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.ObjectReader
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import com.google.cloud.storage.BlobId
@@ -22,6 +24,7 @@ import hudson.remoting.Future
 import hudson.remoting.VirtualChannel
 import hudson.security.ACL
 import hudson.slaves.WorkspaceList
+import hudson.util.ListBoxModel
 import jenkins.MasterToSlaveFileCallable
 import jenkins.model.Jenkins
 import org.apache.commons.io.output.TeeOutputStream
@@ -60,6 +63,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         }
     }
 
+    @set:DataBoundSetter var resultsDir: String = ".firebase"
     @set:DataBoundSetter var credentialsId: String? = null
 
     private var credential: GoogleRobotPrivateKeyCredentials? = null
@@ -71,7 +75,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         return super.start(context)
     }
 
-    override fun task(): DurableTask = FirebaseTestTask(credential, command)
+    override fun task(): DurableTask = FirebaseTestTask(credential, resultsDir, command)
 
     private fun findCredentials(context: StepContext, credentialsId: String): GoogleRobotPrivateKeyCredentials? =
             CredentialsProvider.findCredentialById(
@@ -91,12 +95,15 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         fun getCommandDescriptors(): List<Descriptor<Command>> =
                 Jenkins.getInstance().getDescriptorList(Command::class.java)
 
-        fun doFillCredentialsIdItems(@AncestorInPath project: Item?) = StandardListBoxModel()
+        @Suppress("unused")
+        fun doFillCredentialsIdItems(@AncestorInPath project: Item?): ListBoxModel = StandardListBoxModel()
                 .includeEmptyValue()
                 .includeAs(ACL.SYSTEM, project, GoogleRobotPrivateKeyCredentials::class.java)
     }
 
-    class FirebaseTestTask(val credential: GoogleRobotPrivateKeyCredentials?, val command: Command) : DurableTask() {
+    class FirebaseTestTask(val credential: GoogleRobotPrivateKeyCredentials?,
+                           val resultsDirPath: String,
+                           val command: Command) : DurableTask() {
 
         override fun launch(env: EnvVars, workspace: FilePath, launcher: Launcher, listener: TaskListener): Controller {
             val controlDirPath: String = let {
@@ -105,7 +112,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
             }
             val controlDir = workspace.child(controlDirPath)
 
-            val controller = FirebaseTestController(workspace, controlDirPath)
+            val controller = FirebaseTestController(workspace, controlDirPath, resultsDirPath)
             command.setup(controller)
 
             val script = StringBuilder()
@@ -132,19 +139,19 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         }
 
         private fun keyFile(config: ServiceAccountConfig, configDir: FilePath): FilePath {
-            val path = when (config) {
-                is JsonServiceAccountConfig -> config.jsonKeyFile
-                is P12ServiceAccountConfig -> throw RuntimeException("Only JSON service account keys are supported")
-                else -> throw RuntimeException("Invalid Google service account config")
+            if (config !is JsonServiceAccountConfig) {
+                throw RuntimeException("Only JSON service account keys are supported.")
             }
-            return configDir.createTempFile("gcloud", "key").apply {
-                copyFrom(FileInputStream(File(path)))
+            return configDir.createTempFile("gcloud", ".key").apply {
+                write(JsonKey.load(JacksonFactory(), FileInputStream(File(config.jsonKeyFile)))
+                        .toPrettyString(), "UTF-8")
             }
         }
     }
 
     class FirebaseTestController(workspace: FilePath,
-                                 @JvmField val controlDirPath: String) : Controller()  {
+                                 @JvmField val controlDirPath: String,
+                                 @JvmField val resultsDirPath: String) : Controller()  {
 
         companion object {
             private const val serialVersionUID: Long = 1
@@ -158,7 +165,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
 
         val argfile by lazy { controlDir(workspace).child("argfile.yaml") }
         val logfile by lazy { controlDir(workspace).child("firebase.log") }
-        val results by lazy { controlDir(workspace).child("junit").apply { mkdirs() } }
+        val resultsDir by lazy { workspace.child(resultsDirPath).apply { mkdirs() } }
 
         @Transient var resultFuture: Future<Map<String, TestArtifacts>>? = null
 
@@ -167,15 +174,24 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         override fun exitStatus(workspace: FilePath, launcher: Launcher): Int? {
             status = delegate.exitStatus(workspace, launcher) ?: return null
 
-            links = links ?: Links.parse(logfile.readToString())
+            try {
+                links = links ?: Links.parse(logfile.readToString())
+            } catch (e: Exception) {
+                logger.log(Level.WARNING, "Could not parse Firebase log output", e)
+                return status
+            }
             if (links == null) {
                 logger.log(Level.WARNING, "Could not parse Firebase log output")
                 return status
             }
 
             val output = delegate.getOutput(workspace, launcher)
-            testResults = testResults ?:
-                    mapper.readerFor(TestResult::class.java).readValues<TestResult>(output).readAll()
+            try {
+                testResults = testResults ?: TestResult.reader.readValues<TestResult>(output).readAll()
+            } catch (e: Exception) {
+                logger.log(Level.WARNING, "Could not parse Firebase test output", e)
+                return status
+            }
             if (testResults == null) {
                 logger.log(Level.WARNING, "Could not parse Firebase test output")
                 return status
@@ -186,7 +202,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
             }
 
             if (resultFuture == null) {
-                resultFuture = results.actAsync(ArtifactFetcher(googleCredentials, links!!, testResults!!))
+                resultFuture = resultsDir.actAsync(ArtifactFetcher(googleCredentials, links!!, testResults!!))
             }
 
             resultFuture?.let {
@@ -231,47 +247,42 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         fun controlDir(workspace: FilePath): FilePath = workspace.child(controlDirPath)
     }
 
-    class ArtifactFetcher(val credentials: GoogleCredentials?, val links: Links, val testResults: List<TestResult>)
+    class ArtifactFetcher(credentials: GoogleCredentials?,
+                          val links: Links,
+                          val testResults: List<TestResult>)
         : MasterToSlaveFileCallable<Map<String, TestArtifacts>>() {
 
-        override fun invoke(f: File, channel: VirtualChannel?): Map<String, TestArtifacts> {
-            val storage = StorageOptions.newBuilder()
-                    .setCredentials(credentials ?: GoogleCredentials.getApplicationDefault())
-                    .build()
-                    .service
+        private val storage = StorageOptions.newBuilder()
+                .setCredentials(credentials ?: GoogleCredentials.getApplicationDefault())
+                .build()
+                .service
 
-            val result = mutableMapOf<String, TestArtifacts>()
+        override fun invoke(f: File, channel: VirtualChannel?): Map<String, TestArtifacts> =
+                testResults.associateBy({ it.axisValue }, { (axisValue) -> TestArtifacts(
+                        try {
+                            val junitPrefix = "${links.dir}/$axisValue/test_result_"
+                            val blobs = storage.list(links.bucket,
+                                    Storage.BlobListOption.prefix(junitPrefix))
+                            with (blobs.values.first()) {
+                                val dest = File(f, "junit-$axisValue.xml")
+                                storage.reader(blobId).transferTo(FileOutputStream(dest).channel)
+                                dest.toRelativeString(f)
+                            }
+                        } catch (e: Exception) {
+                            logger.log(Level.WARNING, "Failed to fetch test artifact for $axisValue", e)
+                            null
+                        },
 
-            for ((axisValue) in testResults) {
-                val junit: String? = try {
-                    val junitPrefix = "${links.dir}/$axisValue/test_result_"
-                    val blobs = storage.list(links.bucket,
-                            Storage.BlobListOption.prefix(junitPrefix))
-                    with (blobs.values.first()) {
-                        val dest = File(f, name)
-                        storage.reader(blobId).transferTo(FileOutputStream(dest).channel)
-                        dest.toRelativeString(f)
-                    }
-                } catch (e: Exception) {
-                    logger.log(Level.WARNING, "Failed to fetch test artifact for $axisValue", e)
-                    null
-                }
-
-                val logcat: String? = try {
-                    val dest = File(f, "logcat")
-                    storage.reader(BlobId.of(links.bucket, "$axisValue/logcat"))
-                            .transferTo(FileOutputStream(dest).channel)
-                    dest.toRelativeString(f)
-                } catch (e: Exception) {
-                    logger.log(Level.WARNING, "Failed to fetch test artifact for $axisValue", e)
-                    null
-                }
-
-                result[axisValue] = TestArtifacts(junit, logcat)
-            }
-
-            return result
-        }
+                        try {
+                            val dest = File(f, "logcat-$axisValue")
+                            storage.reader(BlobId.of(links.bucket, "${links.dir}/$axisValue/logcat"))
+                                    .transferTo(FileOutputStream(dest).channel)
+                            dest.toRelativeString(f)
+                        } catch (e: Exception) {
+                            logger.log(Level.WARNING, "Failed to fetch test artifact for $axisValue", e)
+                            null
+                        })
+                })
     }
 
     data class Links(val bucket: String, val dir: String, val console: String) {
@@ -280,7 +291,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
             private val bucketRegex =
                     Regex("""\[https://console\.developers\.google\.com\/storage\/browser\/(.+)\/(.+)\/\]""")
             private val consoleRegex =
-                    Regex("""\[(https:\/\/console\.firebase\.google\.com\/project\/.+)\]""")
+                    Regex("""\[(https://console\.firebase\.google\.com/project/.+)\]""")
 
             fun parse(source: String): Links? {
                 val (bucket, dir) = bucketRegex.find(source)?.destructured ?: return null
@@ -290,7 +301,14 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         }
     }
 
-    data class TestResult(val axisValue: String, val outcome: String, val testDetails: String)
+    data class TestResult(val axisValue: String, val outcome: String, val testDetails: String) {
+        companion object {
+            val reader: ObjectReader = ObjectMapper(YAMLFactory()).apply {
+                registerKotlinModule()
+                propertyNamingStrategy = PropertyNamingStrategy.SNAKE_CASE
+            }.readerFor(TestResult::class.java)
+        }
+    }
 
     data class TestArtifacts(val junit: String?, val logcat: String?)
 }

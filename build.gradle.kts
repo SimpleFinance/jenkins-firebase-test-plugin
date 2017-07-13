@@ -35,6 +35,7 @@ jenkinsPlugin {
     url = "https://wiki.jenkins-ci.org/display/JENKINS/Firebase+Test+Plugin"
     gitHubUrl = "https://github.com/simplefinance/firebase-test-plugin"
     fileExtension = "jpi"
+    pluginFirstClassLoader = true
 
     developers(delegateClosureOf<GroovyObject> {
         setProperty("tadfisher", delegateClosureOf<JpiDeveloper> {

@@ -44,6 +44,7 @@ fun FilePath.append(): OutputStream {
 
     val f = File(remote).absoluteFile
     f.parentFile?.mkdirs()
+    if (!f.exists()) f.createNewFile()
     return Files.newOutputStream(f.toPath(), StandardOpenOption.APPEND)
 }
 
@@ -59,6 +60,7 @@ internal class AppendingFileCallable : FilePath.FileCallable<OutputStream> {
     override fun invoke(f: File, channel: VirtualChannel?): OutputStream {
         val af = f.absoluteFile
         af.parentFile?.mkdirs()
+        if (!af.exists()) af.createNewFile()
         return RemoteOutputStream(Files.newOutputStream(af.toPath(), StandardOpenOption.APPEND))
     }
 }
