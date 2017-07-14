@@ -2,7 +2,6 @@ package com.simple.jenkins.firebase
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.MappingIterator
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.ObjectReader
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -32,77 +31,82 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
 
         companion object {
             val mapper = ObjectMapper(YAMLFactory()).apply { registerKotlinModule() }
-            val deviceReader: ObjectReader = mapper.readerFor(Device::class.java)
+            val deviceReader: ObjectReader = mapper.readerFor(Model::class.java)
             val localeReader: ObjectReader = mapper.readerFor(Locale::class.java)
+            val versionReader: ObjectReader = mapper.readerFor(Version::class.java)
         }
 
-        val devices: List<Device> by lazy { updateDeviceInfo() }
+        val models: List<Model> by lazy { updateModelInfo() }
         val locales: List<Locale> by lazy { updateLocaleInfo() }
+        val versions: List<Version> by lazy { updateVersionInfo() }
 
         override fun getDisplayName(): String = "Target device"
 
         @Suppress("unused")
         fun doFillModelItems(): ListBoxModel = ListBoxModel().apply {
-            add("", "")
-            addAll(devices.sortedBy { it.displayName }.map { it.option })
+            addAll(models.sortedBy { it.displayName }.map { it.option })
         }
 
         @Suppress("unused")
         fun doFillVersionItems(@QueryParameter("model") model: String): ListBoxModel = ListBoxModel().apply {
-            devices.find { it.codename == model }?.supportedVersionIds?.forEach { add(it) }
+            models.find { m -> m.codename == model }?.supportedVersionIds?.forEach { id ->
+                versions.find { it.id == id }?.let { v -> add(v.option) }
+            }
         }
 
         @Suppress("unused")
         fun doFillLocaleItems(): ListBoxModel = ListBoxModel().apply {
-            add("", "")
             addAll(locales.sortedBy { it.displayName }.map { it.option })
         }
 
         @Suppress("unused")
         fun doFillOrientationItems(): ListBoxModel = ListBoxModel().apply {
-            add("", "")
+            add("- default -", "")
             add("Portrait", "portrait")
             add("Landscape", "landscape")
         }
 
-        @Suppress("unused")
-        fun doCheckModel(model: String?): FormValidation = FormValidation.validateRequired(model)
-
-        @Suppress("unused")
-        fun doCheckVersion(version: String?): FormValidation = FormValidation.validateRequired(version)
-
-        private fun updateDeviceInfo(): List<Device> {
+        private fun updateModelInfo(): List<Model> {
             val proc = Runtime.getRuntime().exec("gcloud firebase test android models list --quiet --format=yaml")
-            val reader = BufferedReader(InputStreamReader(proc.inputStream))
-            val output = reader.lineSequence()
-                    .dropWhile { it.trim() != "---" }
-                    .joinToString("\n")
-            val iterator: MappingIterator<Device> = deviceReader.readValues(output)
-            return iterator.readAll()
+            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            return deviceReader.readValues<Model>(output).readAll()
         }
 
         private fun updateLocaleInfo(): List<Locale> {
             val proc = Runtime.getRuntime().exec("gcloud firebase test android locales list --quiet --format=yaml")
-            val reader = BufferedReader(InputStreamReader(proc.inputStream))
-            val output = reader.lineSequence()
-                    .dropWhile { it.trim() != "---" }
-                    .joinToString("\n")
-            val iterator: MappingIterator<Locale> = localeReader.readValues(output)
-            return iterator.readAll()
+            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            return localeReader.readValues<Locale>(output).readAll()
+        }
+
+        private fun updateVersionInfo(): List<Version> {
+            val proc = Runtime.getRuntime().exec("gcloud firebase test android versions list --quiet --format=yaml")
+            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            return versionReader.readValues<Version>(output).readAll()
         }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
-        data class Device(val brand: String, val codename: String, val form: String, val id: String,
-                          val manufacturer: String, val name: String, val screenDensity: Int, val screenX: Int,
-                          val screenY: Int, val supportedAbis: List<String>, val supportedVersionIds: List<String>) {
-            val displayName = "$brand $name ($codename)"
-            val option = ListBoxModel.Option(displayName, codename)
+        data class Model(val id: String, val brand: String, val codename: String, val form: String,
+                         val manufacturer: String, val name: String, val screenDensity: Int, val screenX: Int,
+                         val screenY: Int, val supportedAbis: List<String>, val supportedVersionIds: List<String>,
+                         val tags: List<String> = emptyList()) {
+            val displayName = "$brand $name ($codename)" + if (tags.contains("default")) { " [default]" } else { "" }
+            val option = ListBoxModel.Option(displayName, id, tags.contains("default"))
         }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
-        data class Locale(val id: String, val name: String, val region: String?) {
-            val displayName = "$id: $name" + region?.let { " - $it" }
-            val option = ListBoxModel.Option(displayName, id)
+        data class Locale(val id: String, val name: String, val region: String?, val tags: List<String> = emptyList()) {
+            val displayName = "$id: $name" +
+                    if (region != null) { " - $region" } else { "" } +
+                    if (tags.contains("default")) { " [default]" } else { "" }
+            val option = ListBoxModel.Option(displayName, id, tags.contains("default"))
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Version(val id: String, val versionString: String, val codeName: String, val apiLevel: Int,
+                           val tags: List<String> = emptyList()) {
+            val displayName = "$id: $versionString $codeName" +
+                    if (tags.contains("default")) { " [default]" } else { "" }
+            val option = ListBoxModel.Option(displayName, id, tags.contains("default"))
         }
     }
 }
