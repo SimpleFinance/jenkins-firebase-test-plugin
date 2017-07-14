@@ -2,6 +2,7 @@ import groovy.lang.GroovyObject
 import org.gradle.kotlin.dsl.jenkinsPlugin
 import org.jenkinsci.gradle.plugins.jpi.JpiDeveloper
 import org.jenkinsci.gradle.plugins.jpi.JpiLicense
+import org.jetbrains.kotlin.asJava.classes.lazyPub
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
@@ -17,6 +18,7 @@ buildscript {
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    `maven-publish`
 }
 
 apply {
@@ -36,6 +38,8 @@ jenkinsPlugin {
     gitHubUrl = "https://github.com/simplefinance/firebase-test-plugin"
     fileExtension = "jpi"
     pluginFirstClassLoader = true
+
+    repoUrl = ""
 
     developers(delegateClosureOf<GroovyObject> {
         setProperty("tadfisher", delegateClosureOf<JpiDeveloper> {

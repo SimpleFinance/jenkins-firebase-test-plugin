@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <f:dropdownDescriptorSelector title="Test type" field="command" descriptors="${descriptor.commandDescriptors}" />
+
+    <f:entry title="Google credentials" field="credentialsId">
+        <c:select field="credentialsId" />
+    </f:entry>
+
+    <f:entry title="Results directory" field="resultsDir">
+        <f:textbox />
+    </f:entry>
+</j:jelly>
