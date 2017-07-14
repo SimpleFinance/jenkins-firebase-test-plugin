@@ -26,6 +26,7 @@ apply {
 }
 
 group = "com.simple.jenkins"
+version = "0.1"
 description = "Run Firebase Test Lab tests and publish test results"
 
 val jenkinsVersion: String by extra
@@ -38,8 +39,6 @@ jenkinsPlugin {
     gitHubUrl = "https://github.com/simplefinance/firebase-test-plugin"
     fileExtension = "jpi"
     pluginFirstClassLoader = true
-
-    repoUrl = ""
 
     developers(delegateClosureOf<GroovyObject> {
         setProperty("tadfisher", delegateClosureOf<JpiDeveloper> {
