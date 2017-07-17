@@ -26,7 +26,6 @@ apply {
 }
 
 group = "com.simple.jenkins"
-version = "0.1"
 description = "Run Firebase Test Lab tests and publish test results"
 
 val jenkinsVersion: String by extra
