@@ -241,7 +241,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
 
         override fun cleanup(workspace: FilePath) {
             delegate.cleanup(workspace)
-            //controlDir(workspace).deleteRecursive()
+            controlDir(workspace).deleteRecursive()
         }
 
         fun controlDir(workspace: FilePath): FilePath = workspace.child(controlDirPath)
