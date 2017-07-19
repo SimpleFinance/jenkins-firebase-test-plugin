@@ -2,6 +2,7 @@ import groovy.lang.GroovyObject
 import org.gradle.kotlin.dsl.jenkinsPlugin
 import org.jenkinsci.gradle.plugins.jpi.JpiDeveloper
 import org.jenkinsci.gradle.plugins.jpi.JpiLicense
+import org.jenkinsci.gradle.plugins.jpi.TestDependenciesTask
 import org.jetbrains.kotlin.asJava.classes.lazyPub
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -31,6 +32,8 @@ description = "Run Firebase Test Lab tests and publish test results"
 val jenkinsVersion: String by extra
 val jacksonVersion: String by extra
 
+val excludedTestPlugins = listOf("gcloud-sdk")
+
 jenkinsPlugin {
     coreVersion = jenkinsVersion
     displayName = "Firebase Test Plugin"
@@ -54,7 +57,7 @@ jenkinsPlugin {
 }
 
 repositories {
-    maven { url = uri("https://repo.jenkins-ci.org/public/") }
+    jcenter()
 }
 
 dependencies {
@@ -85,9 +88,20 @@ dependencies {
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-cps:2.36")
     "jenkinsPlugins"("org.jenkins-ci.plugins.workflow:workflow-job:2.13")
     "jenkinsPlugins"("org.jenkins-ci.plugins:google-oauth-plugin:0.5")
+    "optionalJenkinsPlugins"("com.byclosure.jenkins.plugins:gcloud-sdk:0.0.1")
 
     "jenkinsTest"("org.jenkins-ci.main:jenkins-test-harness:2.23") { isTransitive = true }
     "jenkinsTest"("org.jenkins-ci.plugins.workflow:workflow-step-api:2.12:tests")
+}
+
+with (tasks["resolveTestDependencies"] as TestDependenciesTask) {
+    doLast {
+        val index = File(destinationDir, "index")
+        val deps = index.readText()
+        index.writeText(deps.lineSequence().filter {
+            !excludedTestPlugins.contains(it)
+        }.joinToString("\n"))
+    }
 }
 
 kapt {

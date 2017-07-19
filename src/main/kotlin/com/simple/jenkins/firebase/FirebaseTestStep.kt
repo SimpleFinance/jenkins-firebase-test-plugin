@@ -65,6 +65,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
 
     @set:DataBoundSetter var resultsDir: String = ".firebase"
     @set:DataBoundSetter var credentialsId: String? = null
+    @set:DataBoundSetter var gcloud: String = "gcloud"
 
     private var credential: GoogleRobotPrivateKeyCredentials? = null
 
@@ -72,10 +73,11 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         credential = credentialsId?.let {
             findCredentials(context, it) ?: throw RuntimeException("Cannot locate Google OAuth credentials.")
         }
+
         return super.start(context)
     }
 
-    override fun task(): DurableTask = FirebaseTestTask(credential, resultsDir, command)
+    override fun task(): DurableTask = FirebaseTestTask(credential, resultsDir, gcloud, command)
 
     private fun findCredentials(context: StepContext, credentialsId: String): GoogleRobotPrivateKeyCredentials? =
             CredentialsProvider.findCredentialById(
@@ -103,6 +105,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
 
     class FirebaseTestTask(val credential: GoogleRobotPrivateKeyCredentials?,
                            val resultsDirPath: String,
+                           val gcloud: String,
                            val command: Command) : DurableTask() {
 
         override fun launch(env: EnvVars, workspace: FilePath, launcher: Launcher, listener: TaskListener): Controller {
@@ -124,12 +127,12 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
 
                 env.override("GCLOUDSDK_CONFIG", configDir.remote)
                 env.override("GOOGLE_APPLICATION_CREDENTIALS", keyFile.remote)
-                script.append("gcloud auth activate-service-account ${config.accountId} --key-file=${keyFile.remote}\n")
+                script.append("$gcloud auth activate-service-account ${config.accountId} --key-file=${keyFile.remote}\n")
 
                 controller.googleCredentials = ServiceAccountCredentials.fromStream(keyFile.read())
             }
 
-            script.append("gcloud firebase test android run ${command.args()} --format=yaml")
+            script.append("$gcloud firebase test android run ${command.args()} --format=yaml")
 
             val delegate = BourneShellScript(script.toString())
                     .apply { captureOutput() }

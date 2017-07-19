@@ -6,7 +6,14 @@ This plugin is only compatible with Pipeline scripts.
 
 ## Setup
 
-Requires the GCloud SDK binary (`gcloud`) in `$PATH`.
+Supports the
+[GCloud SDK Plugin](https://wiki.jenkins.io/display/JENKINS/GCloud+SDK+Plugin)
+for automated tool installations.
+
+Alternatively, manually install
+the [Google Cloud SDK](https://cloud.google.com/sdk/downloads) and either ensure
+the `gcloud` binary is on the system `$PATH` or provide a path to the binary in
+the pipeline step definition.
 
 Either set a system-wide Google API credential using `gcloud auth
 login|activate-service-account`, or add a Google Robot credential. See the
@@ -20,8 +27,13 @@ documentation.
 In a pipeline stage:
 
 ```groovy
-firebaseTest credentialsId: {id}, resultsDir: {path}, command: {command}
+firebaseTest gcloud: {path to gcloud binary}, credentialsId: {id}, resultsDir: {path}, command: {command}
 ```
+
+> Note: A GCloud SDK tool installation can be used like so:
+> ```groovy
+> firebaseTest gcloud: "${tool 'gcloud-tool-name'}/bin/gcloud", ...
+> ```
 
 Where `command` may be one of:
 
