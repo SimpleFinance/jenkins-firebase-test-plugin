@@ -60,9 +60,9 @@ class TestArgumentsTest {
             test: "test.apk"
             device:
             - model: "flo"
-            - locale: "zh"
-              model: "g3"
+            - model: "g3"
               version: "19"
+              locale: "zh"
             - model: "mako"
               version: "21"
             type: "instrumentation"
