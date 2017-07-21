@@ -41,6 +41,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
+import java.io.Serializable
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -288,9 +289,10 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
                 })
     }
 
-    data class Links(val bucket: String, val dir: String, val console: String) {
-
+    data class Links(val bucket: String, val dir: String, val console: String) : Serializable {
         companion object {
+            private const val serialVersionUID: Long = 1
+
             private val bucketRegex =
                     Regex("""\[https://console\.developers\.google\.com\/storage\/browser\/(.+)\/(.+)\/\]""")
             private val consoleRegex =
@@ -304,8 +306,10 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         }
     }
 
-    data class TestResult(val axisValue: String, val outcome: String, val testDetails: String) {
+    data class TestResult(val axisValue: String, val outcome: String, val testDetails: String) : Serializable {
         companion object {
+            private const val serialVersionUID: Long = 1
+
             val reader: ObjectReader = ObjectMapper(YAMLFactory()).apply {
                 registerKotlinModule()
                 propertyNamingStrategy = PropertyNamingStrategy.SNAKE_CASE
@@ -313,5 +317,9 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         }
     }
 
-    data class TestArtifacts(val junit: String?, val logcat: String?)
+    data class TestArtifacts(val junit: String?, val logcat: String?) : Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1
+        }
+    }
 }
