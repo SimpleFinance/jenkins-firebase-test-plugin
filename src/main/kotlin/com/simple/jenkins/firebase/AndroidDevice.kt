@@ -9,14 +9,16 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import hudson.Extension
 import hudson.model.AbstractDescribableImpl
 import hudson.model.Descriptor
-import hudson.util.FormValidation
 import hudson.util.ListBoxModel
+import hudson.util.LogTaskListener
+import jenkins.model.Jenkins
 import org.jenkinsci.Symbol
 import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
 import org.kohsuke.stapler.QueryParameter
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.ByteArrayOutputStream
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImpl<AndroidDevice>() {
 
@@ -39,6 +41,8 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
         val models: List<Model> by lazy { updateModelInfo() }
         val locales: List<Locale> by lazy { updateLocaleInfo() }
         val versions: List<Version> by lazy { updateVersionInfo() }
+
+        val gcloud: String by lazy { GcloudSdkLocator.locateAny() }
 
         override fun getDisplayName(): String = "Target device"
 
@@ -66,21 +70,31 @@ class AndroidDevice @DataBoundConstructor constructor() : AbstractDescribableImp
             add("Landscape", "landscape")
         }
 
+        private fun gcloud(args: String): String {
+            Jenkins.getInstance().getComputer("")?.node?.let {
+                val launcher = it.createLauncher(LogTaskListener(Logger.getGlobal(), Level.INFO))
+                val output = ByteArrayOutputStream()
+                launcher.launch()
+                        .cmdAsSingleString("$gcloud $args")
+                        .stdout(output)
+                        .join()
+                return output.toString()
+            }
+            return ""
+        }
+
         private fun updateModelInfo(): List<Model> {
-            val proc = Runtime.getRuntime().exec("gcloud firebase test android models list --quiet --format=yaml")
-            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            val output = gcloud("firebase test android models list --quiet --format=yaml")
             return deviceReader.readValues<Model>(output).readAll()
         }
 
         private fun updateLocaleInfo(): List<Locale> {
-            val proc = Runtime.getRuntime().exec("gcloud firebase test android locales list --quiet --format=yaml")
-            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            val output = gcloud("firebase test android locales list --quiet --format=yaml")
             return localeReader.readValues<Locale>(output).readAll()
         }
 
         private fun updateVersionInfo(): List<Version> {
-            val proc = Runtime.getRuntime().exec("gcloud firebase test android versions list --quiet --format=yaml")
-            val output = BufferedReader(InputStreamReader(proc.inputStream)).readText()
+            val output = gcloud("firebase test android versions list --quiet --format=yaml")
             return versionReader.readValues<Version>(output).readAll()
         }
 
