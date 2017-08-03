@@ -37,11 +37,7 @@ import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep
 import org.kohsuke.stapler.AncestorInPath
 import org.kohsuke.stapler.DataBoundConstructor
 import org.kohsuke.stapler.DataBoundSetter
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.OutputStream
-import java.io.Serializable
+import java.io.*
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -228,8 +224,9 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
             // 1. gcloud prints valuable data to stderr
             // 2. BourneShellScript doesn't let us grab logs or stderr output directly unless we subclass both
             //    FileMonitoringTask and FileMonitoringController (the latter is a protected inner class).
-            val tee = TeeOutputStream(sink, logfile.append())
-            return delegate.writeLog(workspace, tee)
+            logfile.append().use { log ->
+                return delegate.writeLog(workspace, TeeOutputStream(sink, log))
+            }
         }
 
         override fun getOutput(workspace: FilePath, launcher: Launcher): ByteArray =
