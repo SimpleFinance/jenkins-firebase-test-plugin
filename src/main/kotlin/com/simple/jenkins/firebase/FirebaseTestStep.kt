@@ -63,6 +63,7 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
     @set:DataBoundSetter var resultsDir: String = ".firebase"
     @set:DataBoundSetter var credentialsId: String? = null
     @set:DataBoundSetter var gcloud: String = "gcloud"
+    @set:DataBoundSetter var beta: Boolean = false
 
     private var credential: GoogleRobotPrivateKeyCredentials? = null
 
@@ -74,7 +75,9 @@ class FirebaseTestStep @DataBoundConstructor constructor(val command: Command)
         return super.start(context)
     }
 
-    override fun task(): DurableTask = FirebaseTestTask(credential, resultsDir, gcloud, command)
+    override fun task(): DurableTask = FirebaseTestTask(credential, resultsDir,
+            if (beta) { "$gcloud beta" } else { gcloud },
+            command)
 
     private fun findCredentials(context: StepContext, credentialsId: String): GoogleRobotPrivateKeyCredentials? =
             CredentialsProvider.findCredentialById(

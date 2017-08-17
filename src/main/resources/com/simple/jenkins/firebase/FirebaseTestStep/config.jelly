@@ -10,4 +10,8 @@
     <f:entry title="Results directory" field="resultsDir">
         <f:textbox />
     </f:entry>
+
+    <f:entry title="Use beta" field="beta">
+        <f:checkbox />
+    </f:entry>
 </j:jelly>
